@@ -2,22 +2,22 @@
 const CACHE_NAME = 'guitar-tuner-v11';
 
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/styles.css',
-  '/tuner.js',
-  '/pitch-detector.js',
-  '/tone-player.js',
-  '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/samples/E2.mp3',
-  '/samples/A2.mp3',
-  '/samples/D3.mp3',
-  '/samples/G3.mp3',
-  '/samples/B3.mp3',
-  '/samples/E4.mp3',
-];
+  './',
+  './index.html',
+  './styles.css',
+  './tuner.js',
+  './pitch-detector.js',
+  './tone-player.js',
+  './manifest.json',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './samples/E2.mp3',
+  './samples/A2.mp3',
+  './samples/D3.mp3',
+  './samples/G3.mp3',
+  './samples/B3.mp3',
+  './samples/E4.mp3',
+].map(path => new URL(path, self.registration.scope).toString());
 
 // Install: pre-cache all assets
 self.addEventListener('install', event => {
