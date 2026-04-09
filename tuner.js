@@ -1,0 +1,463 @@
+// tuner.js — main app controller
+import { PitchDetector } from './pitch-detector.js';
+import { TonePlayer, noteToFreq } from './tone-player.js';
+
+// ── Tuning data ──────────────────────────────────────────────────────────────
+
+const TUNINGS = [
+  { name: 'Standard',       label: 'Standard EADGBe',    strings: ['E2','A2','D3','G3','B3','E4'] },
+  { name: 'Drop D',         label: 'Drop D DADGBe',      strings: ['D2','A2','D3','G3','B3','E4'] },
+  { name: 'Open G',         label: 'Open G DGDGBd',      strings: ['D2','G2','D3','G3','B3','D4'] },
+  { name: 'Open D',         label: 'Open D DADf#Ad',     strings: ['D2','A2','D3','F#3','A3','D4'] },
+  { name: 'Open E',         label: 'Open E EBEg#Be',     strings: ['E2','B2','E3','G#3','B3','E4'] },
+  { name: 'DADGAD',         label: 'DADGAD',             strings: ['D2','A2','D3','G3','A3','D4'] },
+  { name: 'Half Step Down', label: '½ Step Down Eb',     strings: ['Eb2','Ab2','Db3','Gb3','Bb3','Eb4'] },
+  { name: 'Full Step Down', label: 'Full Step Down D',   strings: ['D2','G2','C3','F3','A3','D4'] },
+];
+
+// Note name display labels (strip octave number for display)
+const displayNote = n => n.replace(/\d+/, '').replace('#', '♯').replace('b', '♭');
+
+// ── Note math ────────────────────────────────────────────────────────────────
+
+// Find closest string in current tuning to detected frequency
+function closestString(freq, tuning) {
+  let best = null, bestDiff = Infinity;
+  tuning.strings.forEach((noteStr, idx) => {
+    const target = noteToFreq(noteStr);
+    const cents  = 1200 * Math.log2(freq / target);
+    const diff   = Math.abs(cents);
+    if (diff < bestDiff) { bestDiff = diff; best = { idx, noteStr, cents, target }; }
+  });
+  return best; // null if tuning has no strings
+}
+
+// ── App state ────────────────────────────────────────────────────────────────
+
+const REPEAT_INTERVAL_MS = 2700; // ms between plays — fires 300ms before note fully fades
+const AUTO_REPEAT_COUNT  = 3;    // plays per string when both modes active
+
+const state = {
+  tuningIdx:    0,
+  micActive:    false,
+  activeString: null,
+  repeatOn:     false,
+  autoOn:       false,
+  chromaticMode: false,
+  autoStringIdx: 0,
+  playCount:    0,
+  _timer:       null,
+};
+
+// ── Display state machine ─────────────────────────────────────────────────────
+// ACTIVE   — good signal, updating normally
+// HOLDING  — signal dropped, display frozen for HOLD_TIME_MS
+// DRIFTING — hold expired, needle slowly returning to centre (inside onPitch loop)
+// IDLE     — no note, showing dashes
+const DS = { IDLE: 0, ACTIVE: 1, HOLDING: 2, DRIFTING: 3 };
+let _ds             = DS.IDLE;
+let _holdTimer      = null;
+let _lastGoodFreq   = null;
+let _lowCount       = 0;       // consecutive low-clarity frames before entering hold
+const HOLD_TIME_MS  = 1500;
+const LOW_THRESH    = 3;       // frames needed to confirm signal is gone (anti-flicker)
+let _inTuneFrames   = 0;
+const TUNE_CONFIRM  = 6; // ~300ms of consecutive in-tune readings before showing ✓
+
+// ── Chromatic note matching ───────────────────────────────────────────────────
+const CHROMATIC_NAMES = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
+
+function closestChromatic(freq) {
+  const semitones = 12 * Math.log2(freq / 440);
+  const rounded   = Math.round(semitones);
+  const cents     = Math.round((semitones - rounded) * 100);
+  const midi      = rounded + 69;
+  const name      = CHROMATIC_NAMES[((midi % 12) + 12) % 12];
+  return { noteStr: name, cents, idx: null };
+}
+
+const detector  = new PitchDetector(onPitch);
+const player    = new TonePlayer();
+
+// ── DOM refs ─────────────────────────────────────────────────────────────────
+
+const $repeatBtn      = document.getElementById('repeat-btn');
+const $autoBtn        = document.getElementById('auto-btn');
+const $chrBtn         = document.getElementById('chr-btn');
+const $tuningName     = document.getElementById('tuning-name');
+const $tuningToggle   = document.getElementById('tuning-toggle');
+const $tuningDrawer   = document.getElementById('tuning-drawer');
+const $tuningList     = document.getElementById('tuning-list');
+const $tuningBackdrop = document.getElementById('tuning-backdrop');
+const $signalMeter    = document.getElementById('signal-meter');
+const $tuneTick       = document.getElementById('tune-tick');
+const $noteName     = document.getElementById('note-name');
+const $noteFreq     = document.getElementById('note-freq');
+const $needle       = document.getElementById('gauge-needle');
+const $dot          = document.getElementById('gauge-dot');
+const $gauge        = document.getElementById('gauge');
+const $cents        = document.getElementById('cents-display');
+const $stringBtns   = document.getElementById('string-buttons');
+const $micBtn       = document.getElementById('mic-button');
+const $micLabel     = document.getElementById('mic-label');
+const $errorMsg     = document.getElementById('error-msg');
+
+// ── Render ───────────────────────────────────────────────────────────────────
+
+function renderTuning() {
+  const tuning = TUNINGS[state.tuningIdx];
+  $tuningName.textContent = tuning.label;
+
+  $stringBtns.innerHTML = '';
+  tuning.strings.forEach((noteStr, idx) => {
+    const btn = document.createElement('button');
+    btn.className  = 'string-btn';
+    btn.textContent = displayNote(noteStr);
+    btn.dataset.idx = idx;
+    btn.setAttribute('aria-label', `Play ${noteStr}`);
+    btn.addEventListener('click', () => {
+      // Jump auto/repeat to this string if playback mode is active
+      if (state.repeatOn || state.autoOn) {
+        state.autoStringIdx = idx;
+        state.playCount = 0;
+        startPlaybackMode();
+      } else {
+        try { player.playNote(noteStr); } catch (err) { console.warn(err); }
+        flashStringBtn(btn);
+      }
+    });
+    $stringBtns.appendChild(btn);
+  });
+
+  resetNeedle();
+  state.activeString = null;
+}
+
+function flashStringBtn(btn) {
+  btn.classList.add('active');
+  setTimeout(() => btn.classList.remove('active'), 800);
+}
+
+function _clearToIdle() {
+  $noteName.textContent = '–';
+  $noteName.className   = 'note-name';
+  $noteFreq.textContent = '– Hz';
+  $cents.textContent    = '– ¢';
+  $gauge.className      = 'gauge';
+  $tuneTick.classList.remove('visible');
+}
+
+function resetNeedle() {
+  if (_holdTimer) { clearTimeout(_holdTimer); _holdTimer = null; }
+  _lastGoodFreq  = null;
+  _lowCount      = 0;
+  _inTuneFrames  = 0;
+  _ds            = DS.IDLE;
+  _clearToIdle();
+  setNeedle(0, false);
+  $signalMeter.removeAttribute('data-level');
+}
+
+function updateSignal(clarity) {
+  const level = clarity < 0.5 ? 0
+    : clarity < 0.7  ? 1
+    : clarity < 0.85 ? 2
+    : clarity < 0.93 ? 3 : 4;
+  if (level === 0) $signalMeter.removeAttribute('data-level');
+  else $signalMeter.setAttribute('data-level', level);
+}
+
+// ── Needle position ──────────────────────────────────────────────────────────
+
+// cents: -50 (flat) → 0 (center) → +50 (sharp)
+// maps to gauge left: 5% → 50% → 95%
+function setNeedle(cents, inTune) {
+  const clamped = Math.max(-50, Math.min(50, cents));
+  const pct     = ((clamped + 50) / 100) * 90 + 5; // 5%–95%
+  $needle.style.left = `${pct}%`;
+  $dot.style.left    = `${pct}%`;
+  $needle.classList.toggle('in-tune', inTune);
+  $dot.classList.toggle('in-tune', inTune);
+
+  // Gauge direction + note color state
+  const absCents = Math.abs(cents);
+  const noteState = inTune ? 'in-tune' : absCents > 20 ? 'off' : 'near';
+  const gaugeDir  = inTune ? 'in-tune' : cents < 0 ? 'flat' : 'sharp';
+  $noteName.className = `note-name ${noteState}`;
+  $gauge.className    = `gauge ${gaugeDir}`;
+}
+
+// ── Pitch callback (called ~60fps from detector) ─────────────────────────────
+
+let _lastUpdateTime = 0;
+const UPDATE_INTERVAL_MS = 50; // throttle UI to 20Hz
+const SWIPE_THRESHOLD_PX = 60;
+const FREQ_SMOOTHING     = 0.75; // EMA factor — higher = smoother, slower to respond
+let   _smoothedFreq      = null;
+
+function onPitch({ freq, clarity }) {
+  const now = Date.now();
+  if (now - _lastUpdateTime < UPDATE_INTERVAL_MS) return;
+  _lastUpdateTime = now;
+
+  const goodSignal = !!(freq && clarity >= 0.80);
+  updateSignal(goodSignal ? clarity : 0);
+
+  // ── Good signal ───────────────────────────────────────────────────────────
+  if (goodSignal) {
+    _lowCount = 0;
+
+    // Cancel hold if signal returned before timer fired
+    if (_holdTimer) { clearTimeout(_holdTimer); _holdTimer = null; }
+    _ds = DS.ACTIVE;
+
+    // Smooth frequency
+    _smoothedFreq = _smoothedFreq === null
+      ? freq
+      : _smoothedFreq * FREQ_SMOOTHING + freq * (1 - FREQ_SMOOTHING);
+    _lastGoodFreq = _smoothedFreq;
+
+    // Match note
+    let match;
+    if (state.chromaticMode) {
+      match = closestChromatic(_smoothedFreq);
+    } else {
+      const tuning = TUNINGS[state.tuningIdx];
+      match = closestString(_smoothedFreq, tuning);
+      if (!match || Math.abs(match.cents) > 50) { resetNeedle(); return; }
+    }
+
+    const inTune = Math.abs(match.cents) <= 5;
+
+    // In-tune confirm counter
+    if (inTune) {
+      _inTuneFrames = Math.min(_inTuneFrames + 1, TUNE_CONFIRM + 1);
+      if (_inTuneFrames >= TUNE_CONFIRM) $tuneTick.classList.add('visible');
+    } else {
+      _inTuneFrames = 0;
+      $tuneTick.classList.remove('visible');
+    }
+
+    // Update display
+    $noteName.textContent = displayNote(match.noteStr);
+    $noteFreq.textContent = `${_smoothedFreq.toFixed(1)} Hz`;
+    const cr = Math.round(match.cents);
+    $cents.textContent = cr === 0 ? '0 ¢' : cr > 0 ? `+${cr} ¢` : `${cr} ¢`;
+    setNeedle(match.cents, inTune);
+
+    if (!state.chromaticMode) {
+      const buttons = [...$stringBtns.querySelectorAll('.string-btn')];
+      buttons.forEach((btn, i) => {
+        btn.classList.remove('active', 'in-tune');
+        if (i === match.idx) btn.classList.add(inTune ? 'in-tune' : 'active');
+      });
+      state.activeString = match.idx;
+    }
+    return;
+  }
+
+  // ── No signal ─────────────────────────────────────────────────────────────
+  if (_ds === DS.ACTIVE) {
+    // Require LOW_THRESH consecutive bad frames before entering hold
+    // (prevents single-frame clarity dips from triggering hold)
+    _lowCount++;
+    if (_lowCount < LOW_THRESH) return; // stay ACTIVE, display unchanged
+
+    // Confirmed signal loss — enter hold
+    _ds = DS.HOLDING;
+    _holdTimer = setTimeout(() => {
+      _holdTimer    = null;
+      _inTuneFrames = 0;
+      $tuneTick.classList.remove('visible');
+      _ds = DS.DRIFTING;
+    }, HOLD_TIME_MS);
+  }
+
+  if (_ds === DS.HOLDING) {
+    // Display frozen — nothing to do, just keep showing last reading
+    return;
+  }
+
+  if (_ds === DS.DRIFTING) {
+    // Needle drifts back to centre inside this update loop (no separate RAF)
+    const l = parseFloat($needle.style.left || '50');
+    const d = l + (50 - l) * 0.14;
+    $needle.style.left = `${d}%`;
+    $dot.style.left    = `${d}%`;
+    if (Math.abs(d - 50) < 0.8) {
+      _ds = DS.IDLE;
+      _clearToIdle();
+      setNeedle(0, false);
+    }
+  }
+  // DS.IDLE: nothing to do
+}
+
+// ── Mic toggle ───────────────────────────────────────────────────────────────
+
+async function toggleMic() {
+  if (state.micActive) {
+    detector.stop();
+    state.micActive = false;
+    _smoothedFreq = null;
+    $micBtn.classList.remove('active');
+    $micLabel.textContent = 'Tap to tune';
+    resetNeedle(); // also clears _holdTimer, _lastGoodFreq, tick
+    hideError();
+  } else {
+    try {
+      stopPlaybackMode();
+      await detector.start();
+      state.micActive = true;
+      $micBtn.classList.add('active');
+      $micLabel.textContent = 'Listening…';
+      hideError();
+    } catch (err) {
+      showError(err.message);
+    }
+  }
+}
+
+function showError(msg) {
+  $errorMsg.textContent = msg;
+  $errorMsg.hidden = false;
+}
+function hideError() {
+  $errorMsg.hidden = true;
+}
+
+// ── Repeat / Auto playback mode ──────────────────────────────────────────────
+
+function playCurrentAutoString() {
+  const tuning  = TUNINGS[state.tuningIdx];
+  const noteStr = tuning.strings[state.autoStringIdx];
+  try { player.playNote(noteStr); } catch (err) { console.warn(err); }
+  // Highlight the playing string (amber) — clear others
+  const buttons = [...$stringBtns.querySelectorAll('.string-btn')];
+  buttons.forEach((btn, i) => btn.classList.toggle('playing', i === state.autoStringIdx));
+}
+
+function stopPlaybackMode() {
+  if (state._timer) { clearInterval(state._timer); state._timer = null; }
+  // Clear playing highlights
+  [...$stringBtns.querySelectorAll('.string-btn')].forEach(b => b.classList.remove('playing'));
+}
+
+function startPlaybackMode() {
+  stopPlaybackMode();
+  if (!state.repeatOn && !state.autoOn) return;
+
+  state.playCount = 0;
+  playCurrentAutoString(); // play immediately, don't wait for first interval
+
+  state._timer = setInterval(() => {
+    const tuning    = TUNINGS[state.tuningIdx];
+    const numStr    = tuning.strings.length;
+    const both      = state.repeatOn && state.autoOn;
+    const autoOnly  = state.autoOn  && !state.repeatOn;
+
+    if (autoOnly) {
+      // Advance to next string every tick
+      state.autoStringIdx = (state.autoStringIdx + 1) % numStr;
+      state.playCount = 0;
+    } else if (both) {
+      // Repeat N times then advance
+      state.playCount++;
+      if (state.playCount >= AUTO_REPEAT_COUNT) {
+        state.autoStringIdx = (state.autoStringIdx + 1) % numStr;
+        state.playCount = 0;
+      }
+    }
+    // Repeat-only: autoStringIdx doesn't change, just plays again
+
+    playCurrentAutoString();
+  }, REPEAT_INTERVAL_MS);
+}
+
+function toggleChromatic() {
+  state.chromaticMode = !state.chromaticMode;
+  $chrBtn.classList.toggle('active', state.chromaticMode);
+  resetNeedle();
+}
+
+function toggleRepeat() {
+  state.repeatOn = !state.repeatOn;
+  $repeatBtn.classList.toggle('active', state.repeatOn);
+  startPlaybackMode();
+}
+
+function toggleAuto() {
+  state.autoOn = !state.autoOn;
+  $autoBtn.classList.toggle('active', state.autoOn);
+  startPlaybackMode();
+}
+
+// ── Tuning drawer ────────────────────────────────────────────────────────────
+
+function renderTuningList() {
+  $tuningList.innerHTML = '';
+  TUNINGS.forEach((t, idx) => {
+    const item = document.createElement('div');
+    item.className = 'tuning-drawer-item' + (idx === state.tuningIdx ? ' selected' : '');
+    item.innerHTML = `<div class="tuning-drawer-item-name">${t.name}</div>
+                      <div class="tuning-drawer-item-notes">${t.strings.join(' · ')}</div>`;
+    item.addEventListener('click', () => selectTuning(idx));
+    $tuningList.appendChild(item);
+  });
+}
+
+function openDrawer() {
+  renderTuningList();
+  $tuningDrawer.classList.add('open');
+  $tuningToggle.setAttribute('aria-expanded', 'true');
+  $tuningDrawer.setAttribute('aria-hidden', 'false');
+}
+
+function closeDrawer() {
+  $tuningDrawer.classList.remove('open');
+  $tuningToggle.setAttribute('aria-expanded', 'false');
+  $tuningDrawer.setAttribute('aria-hidden', 'true');
+}
+
+function selectTuning(idx) {
+  if (state.micActive) { detector.stop(); state.micActive = false; _smoothedFreq = null; $micBtn.classList.remove('active'); $micLabel.textContent = 'Tap to tune'; }
+  state.tuningIdx     = idx;
+  state.autoStringIdx = 0;
+  state.playCount     = 0;
+  renderTuning();
+  hideError();
+  closeDrawer();
+  if (state.repeatOn || state.autoOn) startPlaybackMode();
+}
+
+// ── Tuning navigation (kept for swipe) ───────────────────────────────────────
+
+function changeTuning(delta) {
+  selectTuning((state.tuningIdx + delta + TUNINGS.length) % TUNINGS.length);
+}
+
+// Touch swipe support for tuning selector
+let _touchStartX = null;
+document.addEventListener('touchstart', e => { _touchStartX = e.touches[0].clientX; }, { passive: true });
+document.addEventListener('touchend', e => {
+  if (_touchStartX === null) return;
+  const dx = e.changedTouches[0].clientX - _touchStartX;
+  _touchStartX = null;
+  if (Math.abs(dx) > SWIPE_THRESHOLD_PX) changeTuning(dx < 0 ? 1 : -1);
+}, { passive: true });
+
+// ── Event listeners ───────────────────────────────────────────────────────────
+
+$tuningToggle.addEventListener('click', () =>
+  $tuningDrawer.classList.contains('open') ? closeDrawer() : openDrawer()
+);
+$tuningBackdrop.addEventListener('click', closeDrawer);
+$micBtn.addEventListener('click', toggleMic);
+$repeatBtn.addEventListener('click', toggleRepeat);
+$autoBtn.addEventListener('click', toggleAuto);
+$chrBtn.addEventListener('click', toggleChromatic);
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+renderTuning();
+player.preload(); // load samples in background before user taps a string

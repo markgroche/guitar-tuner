@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0d0d0f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <title>Guitar Tuner</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- Tuning selector -->
+    <button class="tuning-selector" id="tuning-toggle" aria-label="Select tuning" aria-expanded="false">
+      <div class="tuning-name" id="tuning-name">Standard EADGBe</div>
+      <span class="tuning-chevron">›</span>
+    </button>
+
+    <!-- Tuning drawer (slides in from right) -->
+    <div class="tuning-drawer" id="tuning-drawer" aria-hidden="true">
+      <div class="tuning-drawer-backdrop" id="tuning-backdrop"></div>
+      <div class="tuning-drawer-panel" id="tuning-panel">
+        <div class="tuning-drawer-header">Tunings</div>
+        <div class="tuning-drawer-list" id="tuning-list">
+          <!-- Populated by tuner.js -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Note display -->
+    <div class="note-display">
+      <div class="note-name" id="note-name">–</div>
+      <div class="note-meta">
+        <div class="note-freq" id="note-freq">– Hz</div>
+        <div class="signal-meter" id="signal-meter">
+          <span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+      <div class="tune-tick" id="tune-tick">✓</div>
+    </div>
+
+    <!-- Needle gauge -->
+    <div class="gauge" id="gauge" role="meter" aria-label="Tuning accuracy">
+      <div class="gauge-track">
+        <div class="gauge-tick tick-flat-2"></div>
+        <div class="gauge-tick tick-flat-1"></div>
+        <div class="gauge-center-mark"></div>
+        <div class="gauge-tick tick-sharp-1"></div>
+        <div class="gauge-tick tick-sharp-2"></div>
+      </div>
+      <div class="gauge-needle" id="gauge-needle"></div>
+      <div class="gauge-dot" id="gauge-dot"></div>
+      <div class="gauge-label gauge-label-flat">FLAT</div>
+      <div class="gauge-label gauge-label-sharp">SHARP</div>
+    </div>
+
+    <!-- Cents readout -->
+    <div class="cents-display" id="cents-display">– ¢</div>
+
+    <!-- String buttons -->
+    <div class="string-buttons" id="string-buttons">
+      <!-- Populated by tuner.js -->
+    </div>
+
+    <!-- Repeat / Auto / Chromatic controls -->
+    <div class="playback-controls">
+      <button class="playback-btn" id="repeat-btn" aria-label="Toggle repeat">
+        <span class="playback-btn-icon">↺</span> Repeat
+      </button>
+      <button class="playback-btn" id="auto-btn" aria-label="Toggle auto advance">
+        <span class="playback-btn-icon">▶▶</span> Auto
+      </button>
+      <button class="playback-btn" id="chr-btn" aria-label="Toggle chromatic mode">
+        <span class="playback-btn-icon">♩</span> Chr
+      </button>
+    </div>
+
+    <!-- Mic button -->
+    <button class="mic-button" id="mic-button" aria-label="Toggle microphone">
+      <span class="mic-icon">🎙</span>
+      <span class="mic-label" id="mic-label">Tap to tune</span>
+    </button>
+
+    <!-- Error message -->
+    <div class="error-msg" id="error-msg" hidden></div>
+
+  </div>
+
+  <script type="module" src="tuner.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .catch(err => console.warn('SW registration failed:', err));
+      });
+    }
+  </script>
+</body>
+</html>

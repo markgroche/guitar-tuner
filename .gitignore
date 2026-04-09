@@ -1,0 +1,13 @@
+.superpowers/
+.claude/
+.DS_Store
+node_modules/
+.venv/
+.env
+.env.*
+*.log
+Thumbs.db
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+bun.lockb
