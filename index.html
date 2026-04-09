@@ -33,12 +33,15 @@
     <!-- Note display -->
     <div class="note-display">
       <div class="note-name" id="note-name">–</div>
+      <div class="note-target" id="note-target">Tuning: Standard</div>
+      <div class="note-current" id="note-current">Detected: –</div>
       <div class="note-meta">
         <div class="note-freq" id="note-freq">– Hz</div>
         <div class="signal-meter" id="signal-meter">
           <span></span><span></span><span></span><span></span>
         </div>
       </div>
+      <div class="status-msg" id="status-msg">Tap the mic and pluck a string.</div>
       <div class="tune-tick" id="tune-tick">✓</div>
     </div>
 
@@ -72,6 +75,9 @@
       </button>
       <button class="playback-btn" id="auto-btn" aria-label="Toggle auto advance">
         <span class="playback-btn-icon">▶▶</span> Auto
+      </button>
+      <button class="playback-btn" id="guide-btn" aria-label="Toggle guided tuning">
+        <span class="playback-btn-icon">✓→</span> Guide
       </button>
       <button class="playback-btn" id="chr-btn" aria-label="Toggle chromatic mode">
         <span class="playback-btn-icon">♩</span> Chr

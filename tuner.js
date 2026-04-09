@@ -16,10 +16,11 @@ const TUNINGS = [
   { name: 'Drop C',         label: 'Drop C CGCFAD',      strings: ['C2','G2','C3','F3','A3','D4'] },
   { name: 'C Standard',     label: 'C Standard C F Bb Eb G C', strings: ['C2','F2','Bb2','Eb3','G3','C4'] },
 ];
-const LOW_TUNING_NAMES = new Set(['Drop C', 'C Standard']);
+const LOW_MODE_NAMES = new Set(['Drop C', 'C Standard']);
 
 // Note name display labels (strip octave number for display)
 const displayNote = n => n.replace(/\d+/, '').replace('#', '♯').replace('b', '♭');
+const formatHz = hz => `${hz.toFixed(1)} Hz`;
 
 // ── Note math ────────────────────────────────────────────────────────────────
 
@@ -35,6 +36,16 @@ function closestString(freq, tuning) {
   return best; // null if tuning has no strings
 }
 
+function noteInfoFromFreq(freq) {
+  const semitones = 12 * Math.log2(freq / 440);
+  const rounded   = Math.round(semitones);
+  const cents     = Math.round((semitones - rounded) * 100);
+  const midi      = rounded + 69;
+  const name      = CHROMATIC_NAMES[((midi % 12) + 12) % 12];
+  const octave    = Math.floor(midi / 12) - 1;
+  return { noteStr: `${name}${octave}`, cents, midi };
+}
+
 // ── App state ────────────────────────────────────────────────────────────────
 
 const REPEAT_INTERVAL_MS = 2700; // ms between plays — fires 300ms before note fully fades
@@ -46,6 +57,8 @@ const state = {
   activeString: null,
   repeatOn:     false,
   autoOn:       false,
+  guideOn:      false,
+  guideIdx:     0,
   lowMode:      false,
   chromaticMode: false,
   autoStringIdx: 0,
@@ -67,17 +80,14 @@ const HOLD_TIME_MS  = 1500;
 const LOW_THRESH    = 3;       // frames needed to confirm signal is gone (anti-flicker)
 let _inTuneFrames   = 0;
 const TUNE_CONFIRM  = 6; // ~300ms of consecutive in-tune readings before showing ✓
+const GUIDE_CONFIRM  = 6; // same cadence for guided auto-advance
 
 // ── Chromatic note matching ───────────────────────────────────────────────────
 const CHROMATIC_NAMES = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
 
 function closestChromatic(freq) {
-  const semitones = 12 * Math.log2(freq / 440);
-  const rounded   = Math.round(semitones);
-  const cents     = Math.round((semitones - rounded) * 100);
-  const midi      = rounded + 69;
-  const name      = CHROMATIC_NAMES[((midi % 12) + 12) % 12];
-  return { noteStr: name, cents, idx: null };
+  const info = noteInfoFromFreq(freq);
+  return { noteStr: info.noteStr.replace(/\d+$/, ''), cents: info.cents, idx: null };
 }
 
 const detector  = new PitchDetector(onPitch);
@@ -87,8 +97,10 @@ const player    = new TonePlayer();
 
 const $repeatBtn      = document.getElementById('repeat-btn');
 const $autoBtn        = document.getElementById('auto-btn');
+const $guideBtn       = document.getElementById('guide-btn');
 const $chrBtn         = document.getElementById('chr-btn');
 const $lowBtn         = document.getElementById('low-btn');
+const $app            = document.getElementById('app');
 const $tuningName     = document.getElementById('tuning-name');
 const $tuningToggle   = document.getElementById('tuning-toggle');
 const $tuningDrawer   = document.getElementById('tuning-drawer');
@@ -96,16 +108,19 @@ const $tuningList     = document.getElementById('tuning-list');
 const $tuningBackdrop = document.getElementById('tuning-backdrop');
 const $signalMeter    = document.getElementById('signal-meter');
 const $tuneTick       = document.getElementById('tune-tick');
-const $noteName     = document.getElementById('note-name');
-const $noteFreq     = document.getElementById('note-freq');
-const $needle       = document.getElementById('gauge-needle');
-const $dot          = document.getElementById('gauge-dot');
-const $gauge        = document.getElementById('gauge');
-const $cents        = document.getElementById('cents-display');
-const $stringBtns   = document.getElementById('string-buttons');
-const $micBtn       = document.getElementById('mic-button');
-const $micLabel     = document.getElementById('mic-label');
-const $errorMsg     = document.getElementById('error-msg');
+const $noteName       = document.getElementById('note-name');
+const $noteTarget     = document.getElementById('note-target');
+const $noteCurrent    = document.getElementById('note-current');
+const $noteFreq       = document.getElementById('note-freq');
+const $statusMsg      = document.getElementById('status-msg');
+const $needle         = document.getElementById('gauge-needle');
+const $dot            = document.getElementById('gauge-dot');
+const $gauge          = document.getElementById('gauge');
+const $cents          = document.getElementById('cents-display');
+const $stringBtns     = document.getElementById('string-buttons');
+const $micBtn         = document.getElementById('mic-button');
+const $micLabel       = document.getElementById('mic-label');
+const $errorMsg       = document.getElementById('error-msg');
 
 // ── Render ───────────────────────────────────────────────────────────────────
 
@@ -116,7 +131,7 @@ function renderTuning() {
   $stringBtns.innerHTML = '';
   tuning.strings.forEach((noteStr, idx) => {
     const btn = document.createElement('button');
-    btn.className  = 'string-btn';
+    btn.className  = 'string-btn' + (state.guideOn && idx === state.guideIdx ? ' guide-target' : '');
     btn.textContent = displayNote(noteStr);
     btn.dataset.idx = idx;
     btn.setAttribute('aria-label', `Play ${noteStr}`);
@@ -136,10 +151,13 @@ function renderTuning() {
 
   resetNeedle();
   state.activeString = null;
+  updateSessionDisplay();
+  syncModeUI();
+  syncTheme();
 }
 
 function isLowTuning(idx) {
-  return LOW_TUNING_NAMES.has(TUNINGS[idx].name);
+  return LOW_MODE_NAMES.has(TUNINGS[idx].name);
 }
 
 function flashStringBtn(btn) {
@@ -147,13 +165,113 @@ function flashStringBtn(btn) {
   setTimeout(() => btn.classList.remove('active'), 800);
 }
 
+function setButtonState(btn, active) {
+  btn.classList.toggle('active', active);
+  btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+}
+
+function syncGuideTargets() {
+  const buttons = [...$stringBtns.querySelectorAll('.string-btn')];
+  buttons.forEach((btn, i) => {
+    btn.classList.toggle('guide-target', state.guideOn && i === state.guideIdx);
+  });
+}
+
+function syncModeUI() {
+  setButtonState($repeatBtn, state.repeatOn);
+  setButtonState($autoBtn, state.autoOn);
+  setButtonState($guideBtn, state.guideOn);
+  setButtonState($chrBtn, state.chromaticMode);
+  setButtonState($lowBtn, state.lowMode);
+  syncGuideTargets();
+}
+
+function syncTheme() {
+  let theme = 'default';
+  if (state.guideOn) theme = 'guide';
+  else if (state.lowMode) theme = 'low';
+  else if (state.chromaticMode) theme = 'chromatic';
+  $app.dataset.theme = theme;
+}
+
+function getTargetLine() {
+  const tuning = TUNINGS[state.tuningIdx];
+  if (state.guideOn) {
+    if (state.guideIdx >= tuning.strings.length) return `Guide complete · ${tuning.name}`;
+    const target = tuning.strings[state.guideIdx];
+    return `Guide ${state.guideIdx + 1}/${tuning.strings.length} · Target ${displayNote(target)}`;
+  }
+  if (state.chromaticMode) return 'Chromatic mode · Swipe for tunings';
+  return `Tuning: ${tuning.name}${state.lowMode ? ' · Low mode' : ''}`;
+}
+
+function getIdleHint() {
+  if (state.guideOn) return 'Pluck the highlighted string until the guide advances.';
+  if (state.lowMode) return 'Low mode is on. Give the low strings a firmer attack.';
+  if (state.chromaticMode) return 'Chromatic mode tracks any note, not just the current tuning.';
+  return 'Tap the mic and pluck a string.';
+}
+
+function updateSessionDisplay() {
+  $noteTarget.textContent = getTargetLine();
+}
+
+function updateSignalHint(freq, clarity, goodSignal) {
+  if (!freq) {
+    $statusMsg.textContent = state.guideOn
+      ? 'Listen for the target string and pluck cleanly once.'
+      : 'No clean pitch yet. Try closer to the mic.';
+    return;
+  }
+
+  if (!goodSignal) {
+    if (clarity < 0.2) {
+      $statusMsg.textContent = 'Too much noise or no clear note. Mute the other strings.';
+    } else if (state.lowMode && freq < LOW_MODE_FREQ_HZ) {
+      $statusMsg.textContent = 'Low string detected, but the note is still soft. Pluck harder.';
+    } else if (clarity < 0.5) {
+      $statusMsg.textContent = 'Hold a cleaner note for a steadier readout.';
+    } else {
+      $statusMsg.textContent = 'Try a stronger attack or move the mic closer.';
+    }
+    return;
+  }
+
+  $statusMsg.textContent = state.guideOn
+    ? 'Keep the string steady until the guide advances.'
+    : 'Signal locked. Fine-tune with the gauge.';
+}
+
+function advanceGuide() {
+  const tuning = TUNINGS[state.tuningIdx];
+  state.guideIdx += 1;
+  _inTuneFrames = 0;
+
+  if (state.guideIdx >= tuning.strings.length) {
+    state.guideOn = false;
+    syncModeUI();
+    syncTheme();
+    updateSessionDisplay();
+    $statusMsg.textContent = 'All strings tuned. Pick another tuning to start again.';
+    return;
+  }
+
+  updateSessionDisplay();
+  syncModeUI();
+  syncTheme();
+  $statusMsg.textContent = `Next up: ${displayNote(tuning.strings[state.guideIdx])}.`;
+}
+
 function _clearToIdle() {
   $noteName.textContent = '–';
   $noteName.className   = 'note-name';
+  $noteTarget.textContent = getTargetLine();
+  $noteCurrent.textContent = 'Detected: –';
   $noteFreq.textContent = '– Hz';
   $cents.textContent    = '– ¢';
   $gauge.className      = 'gauge';
   $tuneTick.classList.remove('visible');
+  $statusMsg.textContent = getIdleHint();
 }
 
 function resetNeedle() {
@@ -253,11 +371,12 @@ function onPitch({ freq, clarity }) {
     _lastGoodFreq = _smoothedFreq;
 
     // Match note
+    const tuning = TUNINGS[state.tuningIdx];
+    const detected = noteInfoFromFreq(_smoothedFreq);
     let match;
     if (state.chromaticMode) {
       match = closestChromatic(_smoothedFreq);
     } else {
-      const tuning = TUNINGS[state.tuningIdx];
       match = closestString(_smoothedFreq, tuning);
       if (!match || Math.abs(match.cents) > centsGateFor(_smoothedFreq)) { resetNeedle(); return; }
     }
@@ -274,19 +393,27 @@ function onPitch({ freq, clarity }) {
     }
 
     // Update display
-    $noteName.textContent = displayNote(match.noteStr);
-    $noteFreq.textContent = `${_smoothedFreq.toFixed(1)} Hz`;
+    const visibleNote = state.chromaticMode ? detected.noteStr : match.noteStr;
+    $noteName.textContent = displayNote(visibleNote);
+    $noteTarget.textContent = getTargetLine();
+    $noteCurrent.textContent = `Detected: ${displayNote(detected.noteStr)} · ${formatHz(_smoothedFreq)}`;
+    $noteFreq.textContent = formatHz(_smoothedFreq);
     const cr = Math.round(match.cents);
     $cents.textContent = cr === 0 ? '0 ¢' : cr > 0 ? `+${cr} ¢` : `${cr} ¢`;
     setNeedle(match.cents, inTune);
+    updateSignalHint(_smoothedFreq, clarity, goodSignal);
 
     if (!state.chromaticMode) {
       const buttons = [...$stringBtns.querySelectorAll('.string-btn')];
       buttons.forEach((btn, i) => {
-        btn.classList.remove('active', 'in-tune');
+        btn.classList.remove('active', 'in-tune', 'guide-target');
         if (i === match.idx) btn.classList.add(inTune ? 'in-tune' : 'active');
+        if (state.guideOn && i === state.guideIdx) btn.classList.add('guide-target');
       });
       state.activeString = match.idx;
+      if (state.guideOn && match.idx === state.guideIdx && inTune && _inTuneFrames >= GUIDE_CONFIRM) {
+        advanceGuide();
+      }
     }
     return;
   }
@@ -311,6 +438,7 @@ function onPitch({ freq, clarity }) {
 
   if (_ds === DS.HOLDING) {
     // Display frozen — nothing to do, just keep showing last reading
+    updateSignalHint(freq, clarity, false);
     return;
   }
 
@@ -326,6 +454,7 @@ function onPitch({ freq, clarity }) {
       setNeedle(0, false);
     }
   }
+  updateSignalHint(freq, clarity, false);
   // DS.IDLE: nothing to do
 }
 
@@ -412,26 +541,63 @@ function startPlaybackMode() {
 
 function toggleChromatic() {
   state.chromaticMode = !state.chromaticMode;
-  $chrBtn.classList.toggle('active', state.chromaticMode);
+  if (state.chromaticMode) {
+    state.guideOn = false;
+    state.repeatOn = false;
+    state.autoOn = false;
+    stopPlaybackMode();
+  }
+  syncModeUI();
+  syncTheme();
   resetNeedle();
 }
 
 function toggleLowMode() {
   state.lowMode = !state.lowMode;
-  $lowBtn.classList.toggle('active', state.lowMode);
+  syncModeUI();
+  syncTheme();
   resetNeedle();
 }
 
 function toggleRepeat() {
   state.repeatOn = !state.repeatOn;
-  $repeatBtn.classList.toggle('active', state.repeatOn);
+  if (state.repeatOn) {
+    state.guideOn = false;
+    syncModeUI();
+    syncTheme();
+  } else {
+    syncModeUI();
+  }
   startPlaybackMode();
 }
 
 function toggleAuto() {
   state.autoOn = !state.autoOn;
-  $autoBtn.classList.toggle('active', state.autoOn);
+  if (state.autoOn) {
+    state.guideOn = false;
+  }
+  syncModeUI();
+  syncTheme();
   startPlaybackMode();
+}
+
+function toggleGuide() {
+  state.guideOn = !state.guideOn;
+  if (state.guideOn) {
+    state.repeatOn = false;
+    state.autoOn = false;
+    state.chromaticMode = false;
+    state.guideIdx = 0;
+    state.playCount = 0;
+    stopPlaybackMode();
+  }
+  syncModeUI();
+  syncTheme();
+  updateSessionDisplay();
+  [...$stringBtns.querySelectorAll('.string-btn')].forEach((btn, i) => {
+    btn.classList.toggle('guide-target', state.guideOn && i === state.guideIdx);
+  });
+  resetNeedle();
 }
 
 // ── Tuning drawer ────────────────────────────────────────────────────────────
@@ -474,10 +640,10 @@ function selectTuning(idx) {
   state.tuningIdx     = idx;
   state.autoStringIdx = 0;
   state.playCount     = 0;
+  state.guideIdx      = 0;
   const nowLowTuning = isLowTuning(idx);
   if (nowLowTuning) state.lowMode = true;
   else if (wasLowTuning) state.lowMode = false;
-  $lowBtn.classList.toggle('active', state.lowMode);
   renderTuning();
   hideError();
   closeDrawer();
@@ -509,6 +675,7 @@ $tuningBackdrop.addEventListener('click', closeDrawer);
 $micBtn.addEventListener('click', toggleMic);
 $repeatBtn.addEventListener('click', toggleRepeat);
 $autoBtn.addEventListener('click', toggleAuto);
+$guideBtn.addEventListener('click', toggleGuide);
 $chrBtn.addEventListener('click', toggleChromatic);
 $lowBtn.addEventListener('click', toggleLowMode);
 

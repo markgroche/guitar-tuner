@@ -19,6 +19,30 @@
   --string-active-bg: rgba(0, 229, 255, 0.1);
 }
 
+#app[data-theme="guide"] {
+  --accent: #7dff92;
+  --accent-glow: rgba(125, 255, 146, 0.28);
+  --in-tune: #adff7c;
+  --in-tune-glow: rgba(173, 255, 124, 0.36);
+  --string-active-bg: rgba(125, 255, 146, 0.1);
+}
+
+#app[data-theme="low"] {
+  --accent: #ffb347;
+  --accent-glow: rgba(255, 179, 71, 0.32);
+  --in-tune: #ffe06a;
+  --in-tune-glow: rgba(255, 224, 106, 0.34);
+  --string-active-bg: rgba(255, 179, 71, 0.1);
+}
+
+#app[data-theme="chromatic"] {
+  --accent: #8ba6ff;
+  --accent-glow: rgba(139, 166, 255, 0.3);
+  --in-tune: #8be1ff;
+  --in-tune-glow: rgba(139, 225, 255, 0.34);
+  --string-active-bg: rgba(139, 166, 255, 0.1);
+}
+
 html, body {
   height: 100%;
   background: #06060a;
@@ -52,6 +76,7 @@ body {
     0 0 0 1px rgba(255, 255, 255, 0.04) inset,
     0 1px 0 rgba(255, 255, 255, 0.06) inset;
   position: relative;
+  isolation: isolate;
   margin: 1rem;
 }
 
@@ -64,6 +89,19 @@ body {
   background: linear-gradient(to right, transparent, var(--accent), transparent);
   opacity: 0.4;
   border-radius: 1px;
+}
+
+#app::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 0%, var(--accent-glow), transparent 38%),
+    radial-gradient(circle at 50% 100%, rgba(255,255,255,0.04), transparent 35%);
+  opacity: 0.85;
+  mix-blend-mode: screen;
+  z-index: -1;
 }
 
 /* ── Tuning selector ── */
@@ -220,6 +258,24 @@ body {
   text-align: center;
   transition: color 0.15s, text-shadow 0.15s;
 }
+.note-target,
+.note-current,
+.status-msg {
+  max-width: 100%;
+  text-align: center;
+}
+.note-target {
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.note-current {
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
 .note-name.off {
   color: var(--off-tune);
   text-shadow: 0 0 40px rgba(255,68,51,0.3);
@@ -235,6 +291,13 @@ body {
 .note-freq {
   font-size: 0.72rem;
   letter-spacing: 0.1em;
+  color: var(--text-secondary);
+}
+.status-msg {
+  min-height: 2.2em;
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  line-height: 1.45;
   color: var(--text-secondary);
 }
 
@@ -438,6 +501,12 @@ body {
   background: rgba(0, 255, 136, 0.06);
   box-shadow: 0 0 10px rgba(0,255,136,0.3);
 }
+.string-btn.guide-target {
+  border-color: var(--in-tune);
+  color: var(--in-tune);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 0 12px var(--in-tune-glow);
+}
 
 /* ── Playback controls (Repeat / Auto) ── */
 .playback-controls {
@@ -475,6 +544,10 @@ body {
   color: var(--amber);
   background: linear-gradient(180deg, #2a2010 0%, #1a1408 100%);
   box-shadow: 0 0 12px rgba(232, 160, 48, 0.3), 0 0 24px rgba(232, 160, 48, 0.1);
+}
+
+.playback-btn[aria-pressed="true"] {
+  transform: translateY(-1px);
 }
 
 /* String button: currently playing in repeat/auto mode */
@@ -567,6 +640,17 @@ body {
 
   .note-name {
     font-size: clamp(6.6rem, 25vw, 8.4rem);
+  }
+
+  .note-target,
+  .note-current,
+  .status-msg {
+    font-size: 0.62rem;
+    line-height: 1.35;
+  }
+
+  .status-msg {
+    min-height: 2.4em;
   }
 
   .note-freq,
