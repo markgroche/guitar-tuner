@@ -3,7 +3,7 @@
 // Reference: de Cheveigné & Kawahara (2002) "YIN, a fundamental frequency estimator"
 
 const YIN_THRESHOLD = 0.15;  // 0.10 was too strict — risks locking onto harmonics on complex/indirect signals
-const BUFFER_SIZE   = 2048;  // samples per analysis frame
+const BUFFER_SIZE   = 4096;  // longer window improves low-note stability
 const MIN_FREQ      = 60;    // Hz — below low E2 (82.4 Hz), ignore
 const MAX_FREQ      = 1400;  // Hz — above high e4 (329.6 Hz × 4 harmonics)
 

@@ -194,13 +194,17 @@ const UPDATE_INTERVAL_MS = 50; // throttle UI to 20Hz
 const SWIPE_THRESHOLD_PX = 60;
 const FREQ_SMOOTHING     = 0.75; // EMA factor — higher = smoother, slower to respond
 let   _smoothedFreq      = null;
+const LOW_NOTE_FREQ_HZ   = 100;
+const LOW_NOTE_CLARITY   = 0.65;
+const DEFAULT_CLARITY    = 0.80;
 
 function onPitch({ freq, clarity }) {
   const now = Date.now();
   if (now - _lastUpdateTime < UPDATE_INTERVAL_MS) return;
   _lastUpdateTime = now;
 
-  const goodSignal = !!(freq && clarity >= 0.80);
+  const clarityGate = freq && freq < LOW_NOTE_FREQ_HZ ? LOW_NOTE_CLARITY : DEFAULT_CLARITY;
+  const goodSignal = !!(freq && clarity >= clarityGate);
   updateSignal(goodSignal ? clarity : 0);
 
   // ── Good signal ───────────────────────────────────────────────────────────
