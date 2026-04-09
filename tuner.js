@@ -16,6 +16,7 @@ const TUNINGS = [
   { name: 'Drop C',         label: 'Drop C CGCFAD',      strings: ['C2','G2','C3','F3','A3','D4'] },
   { name: 'C Standard',     label: 'C Standard C F Bb Eb G C', strings: ['C2','F2','Bb2','Eb3','G3','C4'] },
 ];
+const LOW_TUNING_NAMES = new Set(['Drop C', 'C Standard']);
 
 // Note name display labels (strip octave number for display)
 const displayNote = n => n.replace(/\d+/, '').replace('#', '♯').replace('b', '♭');
@@ -135,6 +136,10 @@ function renderTuning() {
 
   resetNeedle();
   state.activeString = null;
+}
+
+function isLowTuning(idx) {
+  return LOW_TUNING_NAMES.has(TUNINGS[idx].name);
 }
 
 function flashStringBtn(btn) {
@@ -465,9 +470,14 @@ function closeDrawer() {
 
 function selectTuning(idx) {
   if (state.micActive) { detector.stop(); state.micActive = false; _smoothedFreq = null; $micBtn.classList.remove('active'); $micLabel.textContent = 'Tap to tune'; }
+  const wasLowTuning = isLowTuning(state.tuningIdx);
   state.tuningIdx     = idx;
   state.autoStringIdx = 0;
   state.playCount     = 0;
+  const nowLowTuning = isLowTuning(idx);
+  if (nowLowTuning) state.lowMode = true;
+  else if (wasLowTuning) state.lowMode = false;
+  $lowBtn.classList.toggle('active', state.lowMode);
   renderTuning();
   hideError();
   closeDrawer();

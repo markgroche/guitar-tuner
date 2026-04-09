@@ -13,4 +13,7 @@ test('loads the tuner and opens the tuning drawer', async ({ page }) => {
   await expect(page.locator('#tuning-list .tuning-drawer-item')).toHaveCount(10);
   await expect(page.locator('#tuning-list')).toContainText('Drop C');
   await expect(page.locator('#tuning-list')).toContainText('C Standard');
+
+  await page.locator('#tuning-list .tuning-drawer-item', { hasText: 'Drop C' }).click();
+  await expect(page.locator('#low-btn')).toHaveClass(/active/);
 });
