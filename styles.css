@@ -181,7 +181,7 @@ html, body {
   margin-top: 0.15rem;
 }
 .tuning-drawer-item:hover .tuning-drawer-item-name { color: #fff; }
-.tuning-drawer-item:hover .tuning-drawer-item-notes { color: #6868888; color: #686888; }
+.tuning-drawer-item:hover .tuning-drawer-item-notes { color: #686888; }
 .tuning-drawer-item.selected .tuning-drawer-item-name {
   color: var(--accent);
 }
@@ -438,6 +438,8 @@ html, body {
 /* ── Playback controls (Repeat / Auto) ── */
 .playback-controls {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 0.75rem;
 }
 .playback-btn {

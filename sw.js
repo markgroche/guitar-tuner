@@ -1,5 +1,5 @@
 // sw.js — Cache-first service worker for offline use
-const CACHE_NAME = 'guitar-tuner-v11';
+const CACHE_NAME = 'guitar-tuner-v12';
 
 const ASSETS = [
   './',
@@ -7,6 +7,7 @@ const ASSETS = [
   './styles.css',
   './tuner.js',
   './pitch-detector.js',
+  './pitch-worker.js',
   './tone-player.js',
   './manifest.json',
   './icons/icon-192.png',

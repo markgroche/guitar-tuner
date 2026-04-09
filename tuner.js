@@ -13,6 +13,8 @@ const TUNINGS = [
   { name: 'DADGAD',         label: 'DADGAD',             strings: ['D2','A2','D3','G3','A3','D4'] },
   { name: 'Half Step Down', label: '½ Step Down Eb',     strings: ['Eb2','Ab2','Db3','Gb3','Bb3','Eb4'] },
   { name: 'Full Step Down', label: 'Full Step Down D',   strings: ['D2','G2','C3','F3','A3','D4'] },
+  { name: 'Drop C',         label: 'Drop C CGCFAD',      strings: ['C2','G2','C3','F3','A3','D4'] },
+  { name: 'C Standard',     label: 'C Standard C F Bb Eb G C', strings: ['C2','F2','Bb2','Eb3','G3','C4'] },
 ];
 
 // Note name display labels (strip octave number for display)
@@ -43,6 +45,7 @@ const state = {
   activeString: null,
   repeatOn:     false,
   autoOn:       false,
+  lowMode:      false,
   chromaticMode: false,
   autoStringIdx: 0,
   playCount:    0,
@@ -84,6 +87,7 @@ const player    = new TonePlayer();
 const $repeatBtn      = document.getElementById('repeat-btn');
 const $autoBtn        = document.getElementById('auto-btn');
 const $chrBtn         = document.getElementById('chr-btn');
+const $lowBtn         = document.getElementById('low-btn');
 const $tuningName     = document.getElementById('tuning-name');
 const $tuningToggle   = document.getElementById('tuning-toggle');
 const $tuningDrawer   = document.getElementById('tuning-drawer');
@@ -150,6 +154,7 @@ function _clearToIdle() {
 function resetNeedle() {
   if (_holdTimer) { clearTimeout(_holdTimer); _holdTimer = null; }
   _lastGoodFreq  = null;
+  _smoothedFreq  = null;
   _lowCount      = 0;
   _inTuneFrames  = 0;
   _ds            = DS.IDLE;
@@ -196,14 +201,35 @@ const FREQ_SMOOTHING     = 0.75; // EMA factor — higher = smoother, slower to 
 let   _smoothedFreq      = null;
 const LOW_NOTE_FREQ_HZ   = 100;
 const LOW_NOTE_CLARITY   = 0.65;
+const LOW_MODE_FREQ_HZ   = 140;
+const LOW_MODE_CLARITY   = 0.55;
+const LOW_MODE_CENTS     = 70;
 const DEFAULT_CLARITY    = 0.80;
+const DEFAULT_CENTS      = 50;
+
+function clarityGateFor(freq) {
+  if (!freq) return DEFAULT_CLARITY;
+  if (state.lowMode && freq < LOW_MODE_FREQ_HZ) return 0.52;
+  if (freq < LOW_NOTE_FREQ_HZ) return LOW_NOTE_CLARITY;
+  return DEFAULT_CLARITY;
+}
+
+function centsGateFor(freq) {
+  if (state.lowMode && freq && freq < LOW_MODE_FREQ_HZ) return 75;
+  return DEFAULT_CENTS;
+}
+
+function smoothingFor(freq) {
+  if (state.lowMode && freq && freq < LOW_MODE_FREQ_HZ) return 0.86;
+  return FREQ_SMOOTHING;
+}
 
 function onPitch({ freq, clarity }) {
   const now = Date.now();
   if (now - _lastUpdateTime < UPDATE_INTERVAL_MS) return;
   _lastUpdateTime = now;
 
-  const clarityGate = freq && freq < LOW_NOTE_FREQ_HZ ? LOW_NOTE_CLARITY : DEFAULT_CLARITY;
+  const clarityGate = clarityGateFor(freq);
   const goodSignal = !!(freq && clarity >= clarityGate);
   updateSignal(goodSignal ? clarity : 0);
 
@@ -218,7 +244,7 @@ function onPitch({ freq, clarity }) {
     // Smooth frequency
     _smoothedFreq = _smoothedFreq === null
       ? freq
-      : _smoothedFreq * FREQ_SMOOTHING + freq * (1 - FREQ_SMOOTHING);
+      : _smoothedFreq * smoothingFor(freq) + freq * (1 - smoothingFor(freq));
     _lastGoodFreq = _smoothedFreq;
 
     // Match note
@@ -228,7 +254,7 @@ function onPitch({ freq, clarity }) {
     } else {
       const tuning = TUNINGS[state.tuningIdx];
       match = closestString(_smoothedFreq, tuning);
-      if (!match || Math.abs(match.cents) > 50) { resetNeedle(); return; }
+      if (!match || Math.abs(match.cents) > centsGateFor(_smoothedFreq)) { resetNeedle(); return; }
     }
 
     const inTune = Math.abs(match.cents) <= 5;
@@ -271,6 +297,7 @@ function onPitch({ freq, clarity }) {
     _ds = DS.HOLDING;
     _holdTimer = setTimeout(() => {
       _holdTimer    = null;
+      _smoothedFreq = null;
       _inTuneFrames = 0;
       $tuneTick.classList.remove('visible');
       _ds = DS.DRIFTING;
@@ -384,6 +411,12 @@ function toggleChromatic() {
   resetNeedle();
 }
 
+function toggleLowMode() {
+  state.lowMode = !state.lowMode;
+  $lowBtn.classList.toggle('active', state.lowMode);
+  resetNeedle();
+}
+
 function toggleRepeat() {
   state.repeatOn = !state.repeatOn;
   $repeatBtn.classList.toggle('active', state.repeatOn);
@@ -403,8 +436,15 @@ function renderTuningList() {
   TUNINGS.forEach((t, idx) => {
     const item = document.createElement('div');
     item.className = 'tuning-drawer-item' + (idx === state.tuningIdx ? ' selected' : '');
-    item.innerHTML = `<div class="tuning-drawer-item-name">${t.name}</div>
-                      <div class="tuning-drawer-item-notes">${t.strings.join(' · ')}</div>`;
+    const name = document.createElement('div');
+    name.className = 'tuning-drawer-item-name';
+    name.textContent = t.name;
+
+    const notes = document.createElement('div');
+    notes.className = 'tuning-drawer-item-notes';
+    notes.textContent = t.strings.join(' · ');
+
+    item.append(name, notes);
     item.addEventListener('click', () => selectTuning(idx));
     $tuningList.appendChild(item);
   });
@@ -460,6 +500,7 @@ $micBtn.addEventListener('click', toggleMic);
 $repeatBtn.addEventListener('click', toggleRepeat);
 $autoBtn.addEventListener('click', toggleAuto);
 $chrBtn.addEventListener('click', toggleChromatic);
+$lowBtn.addEventListener('click', toggleLowMode);
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 

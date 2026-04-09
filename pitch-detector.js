@@ -6,6 +6,7 @@ const YIN_THRESHOLD = 0.15;  // 0.10 was too strict — risks locking onto harmo
 const BUFFER_SIZE   = 4096;  // longer window improves low-note stability
 const MIN_FREQ      = 60;    // Hz — below low E2 (82.4 Hz), ignore
 const MAX_FREQ      = 1400;  // Hz — above high e4 (329.6 Hz × 4 harmonics)
+const ANALYSIS_INTERVAL_MS = 33; // ~30Hz; enough for a tuner and lighter on phones
 
 export class PitchDetector {
   constructor(onPitch) {
@@ -17,12 +18,18 @@ export class PitchDetector {
     this.buffer     = new Float32Array(BUFFER_SIZE);
     this._rafId     = null;
     this._running   = false;
+    this._lastAnalysisAt = 0;
+    this._worker    = null;
+    this._inFlight  = false;
+    this._workerReady = false;
   }
 
   async start() {
     if (this._running) return;
 
     this.context = new (window.AudioContext || window.webkitAudioContext)();
+    this._lastAnalysisAt = 0;
+    this._initWorker();
 
     let stream;
     try {
@@ -50,16 +57,59 @@ export class PitchDetector {
     if (this._rafId) { cancelAnimationFrame(this._rafId); this._rafId = null; }
     if (this.stream) { this.stream.getTracks().forEach(t => t.stop()); this.stream = null; }
     if (this.context) { this.context.close(); this.context = null; }
+    if (this._worker) {
+      this._worker.terminate();
+      this._worker = null;
+    }
+    this._inFlight = false;
+    this._workerReady = false;
+    this._lastAnalysisAt = 0;
   }
 
   _loop() {
     if (!this._running) return;
     this._rafId = requestAnimationFrame(() => {
-      this.analyser.getFloatTimeDomainData(this.buffer);
-      const result = yin(this.buffer, this.context.sampleRate);
-      this.onPitch(result);  // { freq: number | null, clarity: number }
+      const now = performance.now();
+      if (now - this._lastAnalysisAt >= ANALYSIS_INTERVAL_MS && !this._inFlight) {
+        this._lastAnalysisAt = now;
+        this.analyser.getFloatTimeDomainData(this.buffer);
+        const frame = this.buffer.slice();
+        if (this._workerReady && this._worker) {
+          this._inFlight = true;
+          this._worker.postMessage({ type: 'analyze', samples: frame, sampleRate: this.context.sampleRate }, [frame.buffer]);
+        } else {
+          const result = yin(frame, this.context.sampleRate);
+          this.onPitch(result);  // { freq: number | null, clarity: number }
+        }
+      }
       this._loop();
     });
+  }
+
+  _initWorker() {
+    if (this._worker) return;
+    try {
+      this._worker = new Worker(new URL('./pitch-worker.js', import.meta.url), { type: 'module' });
+      this._worker.onmessage = event => {
+        const msg = event.data;
+        if (!msg || msg.type !== 'result') return;
+        this._inFlight = false;
+        this.onPitch(msg.result);
+      };
+      this._worker.onerror = () => {
+        // Fall back to main-thread analysis if the worker fails.
+        if (this._worker) {
+          this._worker.terminate();
+          this._worker = null;
+        }
+        this._workerReady = false;
+        this._inFlight = false;
+      };
+      this._workerReady = true;
+    } catch {
+      this._worker = null;
+      this._workerReady = false;
+    }
   }
 }
 
