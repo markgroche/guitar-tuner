@@ -1,0 +1,30 @@
+Guitar tuner — audio and open source credits
+
+Pitch detection: Pitchy 4.1.0 by Ian Johnson, Zero Clause BSD.
+https://github.com/ianprime0509/pitchy
+Bundled with fft.js 4.0.4 by Fedor Indutny, MIT.
+Full notices: vendor/pitchy-LICENSE.txt and vendor/fft-LICENSE.txt.
+
+Recorded guitar sounds distributed by Nicholaus P. Brosowsky,
+tonejs-instruments, samples licensed CC BY 3.0.
+https://github.com/nbrosowsky/tonejs-instruments
+https://creativecommons.org/licenses/by/3.0/
+Source revision: 622c2f1c32c8cfce4158ddc3eb26e518ddef37e5
+
+Steel-string acoustic: University of Iowa Musical Instrument Samples,
+via tonejs-instruments. http://theremin.music.uiowa.edu/
+Electric guitar: Karoryfer Samples, via tonejs-instruments.
+https://www.karoryfer.com/karoryfer-samples
+Nylon-string guitar: quartertone, classicalguitar multisampled pack,
+Freesound pack 11573, via tonejs-instruments.
+https://freesound.org/people/quartertone/packs/11573/
+Original provenance: samples/sample-source-info.txt.
+Upstream licence: samples/UPSTREAM-LICENSE.txt.
+
+Changes: a selected subset is bundled locally. The MP3 recordings are
+unmodified. Playback is shifted to the requested tuning frequency using
+per-recording pitch estimates, with short fades and adjustable volume.
+Calibration details: sample-manifest.json and sample-calibration.json.
+
+Gieson is an experience reference only. No Gieson code, visual artwork
+or recordings are included.

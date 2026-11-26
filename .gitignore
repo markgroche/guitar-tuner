@@ -11,3 +11,6 @@ Thumbs.db
 yarn.lock
 pnpm-lock.yaml
 bun.lockb
+
+# Generated Pages artifact
+_site/

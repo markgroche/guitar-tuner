@@ -1,111 +1,208 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#0d0d0f">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <title>Guitar Tuner</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <div id="app">
-
-    <!-- Tuning selector -->
-    <button class="tuning-selector" id="tuning-toggle" aria-label="Select tuning" aria-expanded="false">
-      <div class="tuning-name" id="tuning-name">Standard EADGBe</div>
-      <span class="tuning-chevron">›</span>
-    </button>
-
-    <!-- Tuning drawer (slides in from right) -->
-    <div class="tuning-drawer" id="tuning-drawer" aria-hidden="true">
-      <div class="tuning-drawer-backdrop" id="tuning-backdrop"></div>
-      <div class="tuning-drawer-panel" id="tuning-panel">
-        <div class="tuning-drawer-header">Tunings</div>
-        <div class="tuning-drawer-list" id="tuning-list">
-          <!-- Populated by tuner.js -->
-        </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#101018" />
+    <title>Guitar Tuner</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main id="app">
+      <header class="app-header">
+        <h1>Guitar tuner</h1>
+        <span>Play. Listen. Tune.</span>
+      </header>
+      <button
+        class="tuning-selector"
+        id="tuning-toggle"
+        aria-label="Choose tuning"
+        aria-expanded="false"
+        aria-controls="tuning-drawer"
+      >
+        <span class="tuning-name" id="tuning-name">Standard</span
+        ><span aria-hidden="true">⌄</span>
+      </button>
+      <div class="tuning-drawer" id="tuning-drawer" aria-hidden="true" inert>
+        <div class="tuning-drawer-backdrop" id="tuning-backdrop"></div>
+        <section
+          class="tuning-drawer-panel"
+          id="tuning-panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="drawer-title"
+        >
+          <div class="drawer-heading">
+            <h2 id="drawer-title">Choose tuning</h2>
+            <button id="drawer-close" type="button">Close</button>
+          </div>
+          <label class="sr-only" for="tuning-search"
+            >Search tuning names or notes</label
+          ><input
+            id="tuning-search"
+            type="search"
+            placeholder="Search names or notes"
+            autocomplete="off"
+          />
+          <p id="preset-count" class="preset-count" role="status">20 tunings</p>
+          <div class="tuning-drawer-list" id="tuning-list"></div>
+          <p class="preset-footnote">
+            Notes run from string 6 to string 1. Use strings suited to very low
+            or high tunings.
+          </p>
+        </section>
       </div>
-    </div>
-
-    <!-- Note display -->
-    <div class="note-display">
-      <div class="note-name" id="note-name">–</div>
-      <div class="note-target" id="note-target">Tuning: Standard</div>
-      <div class="note-current" id="note-current">Detected: –</div>
-      <div class="note-meta">
-        <div class="note-freq" id="note-freq">– Hz</div>
-        <div class="signal-meter" id="signal-meter">
+      <section class="note-display" aria-label="Current tuning reading">
+        <div class="note-target" id="note-target">Standard · auto string</div>
+        <div class="note-name" id="note-name">–</div>
+        <div class="note-current" id="note-current">Play one open string</div>
+        <span class="tune-tick" id="tune-tick" aria-hidden="true">✓</span>
+      </section>
+      <div
+        class="gauge"
+        id="gauge"
+        role="meter"
+        aria-label="Tuning offset"
+        aria-valuemin="-50"
+        aria-valuemax="50"
+        aria-valuenow="0"
+        aria-valuetext="No current reading"
+      >
+        <div class="gauge-track">
+          <span class="gauge-tick tick-flat-2"></span
+          ><span class="gauge-tick tick-flat-1"></span
+          ><span class="gauge-center-mark"></span
+          ><span class="gauge-tick tick-sharp-1"></span
+          ><span class="gauge-tick tick-sharp-2"></span>
+        </div>
+        <div class="gauge-needle" id="gauge-needle"></div>
+        <div class="gauge-dot" id="gauge-dot"></div>
+        <span class="gauge-label gauge-label-flat">FLAT</span
+        ><span class="gauge-label gauge-label-sharp">SHARP</span>
+      </div>
+      <div class="cents-display" id="cents-display">– ¢</div>
+      <div class="status-row">
+        <div
+          class="status-msg"
+          id="status-msg"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          Start the microphone, or tap a string to hear its note.
+        </div>
+        <div
+          class="signal-meter"
+          id="signal-meter"
+          role="img"
+          aria-label="Microphone level"
+        >
           <span></span><span></span><span></span><span></span>
         </div>
       </div>
-      <div class="status-msg" id="status-msg">Tap the mic and pluck a string.</div>
-      <div class="tune-tick" id="tune-tick">✓</div>
-    </div>
-
-    <!-- Needle gauge -->
-    <div class="gauge" id="gauge" role="meter" aria-label="Tuning accuracy">
-      <div class="gauge-track">
-        <div class="gauge-tick tick-flat-2"></div>
-        <div class="gauge-tick tick-flat-1"></div>
-        <div class="gauge-center-mark"></div>
-        <div class="gauge-tick tick-sharp-1"></div>
-        <div class="gauge-tick tick-sharp-2"></div>
+      <div
+        class="string-buttons"
+        id="string-buttons"
+        role="group"
+        aria-label="Strings, lowest to highest"
+      ></div>
+      <div class="target-controls">
+        <span>Tap a string to hear it. While listening, tap to lock it.</span
+        ><button id="unlock-btn" hidden>Auto detect</button>
       </div>
-      <div class="gauge-needle" id="gauge-needle"></div>
-      <div class="gauge-dot" id="gauge-dot"></div>
-      <div class="gauge-label gauge-label-flat">FLAT</div>
-      <div class="gauge-label gauge-label-sharp">SHARP</div>
-    </div>
-
-    <!-- Cents readout -->
-    <div class="cents-display" id="cents-display">– ¢</div>
-
-    <!-- String buttons -->
-    <div class="string-buttons" id="string-buttons">
-      <!-- Populated by tuner.js -->
-    </div>
-
-    <!-- Repeat / Auto / Chromatic controls -->
-    <div class="playback-controls">
-      <button class="playback-btn" id="repeat-btn" aria-label="Toggle repeat">
-        <span class="playback-btn-icon">↺</span> Repeat
+      <button class="mic-button" id="mic-button" aria-pressed="false">
+        <svg
+          width="19"
+          height="22"
+          viewBox="0 0 20 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.7"
+          aria-hidden="true"
+        >
+          <rect x="6" y="1" width="8" height="14" rx="4" />
+          <path d="M2 10v2a8 8 0 0 0 16 0v-2M10 20v3M5 23h10" /></svg
+        ><span id="mic-label">Start tuning</span>
       </button>
-      <button class="playback-btn" id="auto-btn" aria-label="Toggle auto advance">
-        <span class="playback-btn-icon">▶▶</span> Auto
-      </button>
-      <button class="playback-btn" id="guide-btn" aria-label="Toggle guided tuning">
-        <span class="playback-btn-icon">✓→</span> Guide
-      </button>
-      <button class="playback-btn" id="chr-btn" aria-label="Toggle chromatic mode">
-        <span class="playback-btn-icon">♩</span> Chr
-      </button>
-      <button class="playback-btn" id="low-btn" aria-label="Toggle low tuning mode">
-        <span class="playback-btn-icon">▼</span> Low
-      </button>
-    </div>
-
-    <!-- Mic button -->
-    <button class="mic-button" id="mic-button" aria-label="Toggle microphone">
-      <span class="mic-icon">🎙</span>
-      <span class="mic-label" id="mic-label">Tap to tune</span>
-    </button>
-
-    <!-- Error message -->
-    <div class="error-msg" id="error-msg" hidden></div>
-
-  </div>
-
-  <script type="module" src="tuner.js"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .catch(err => console.warn('SW registration failed:', err));
-      });
-    }
-  </script>
-</body>
+      <div
+        class="playback-controls"
+        role="group"
+        aria-label="Tuning and playback modes"
+      >
+        <button class="playback-btn" id="guide-btn" aria-pressed="false">
+          Guide</button
+        ><button class="playback-btn" id="chr-btn" aria-pressed="false">
+          Chromatic</button
+        ><button class="playback-btn" id="repeat-btn" aria-pressed="false">
+          Repeat note</button
+        ><button class="playback-btn" id="auto-btn" aria-pressed="false">
+          Play all
+        </button>
+      </div>
+      <section class="reference-controls" aria-label="Reference sound">
+        <label for="sound-select">Reference sound</label
+        ><select id="sound-select">
+          <option value="acoustic">Steel-string acoustic</option>
+          <option value="nylon">Nylon-string guitar</option>
+          <option value="electric">Clean electric guitar</option>
+          <option value="sine">Pure tone</option>
+        </select>
+        <label for="volume">Volume</label
+        ><input id="volume" type="range" min="0" max="100" value="65" />
+        <p id="sound-status">Recorded guitar · calibrated playback</p>
+      </section>
+      <details class="audio-settings">
+        <summary>Microphone &amp; tuning settings</summary>
+        <div class="settings-grid">
+          <label for="mic-input">Audio input</label
+          ><select id="mic-input">
+            <option value="">Default microphone</option></select
+          ><label for="sensitivity">Sensitivity</label
+          ><input
+            id="sensitivity"
+            type="range"
+            min="35"
+            max="65"
+            value="54"
+            aria-describedby="sensitivity-help"
+          />
+          <p id="sensitivity-help">
+            Higher picks up softer notes. Lower it in a noisy room.
+          </p>
+          <label for="reference-pitch">Reference A4</label>
+          <div class="reference-pitch">
+            <input
+              id="reference-pitch"
+              type="number"
+              min="415"
+              max="466"
+              step="0.1"
+              value="440"
+            /><span>Hz</span>
+          </div>
+          <p id="input-status">
+            Microphone audio is analysed on this device and is never uploaded.
+          </p>
+        </div>
+      </details>
+      <p class="error-msg" id="error-msg" role="alert" hidden></p>
+      <footer>
+        <span>20 tunings · six strings</span
+        ><a href="CREDITS.txt" target="_blank" rel="noopener">Sound credits</a>
+      </footer>
+    </main>
+    <script type="module" src="tuner.js"></script>
+    <script>
+      if ("serviceWorker" in navigator)
+        window.addEventListener("load", () =>
+          navigator.serviceWorker
+            .register("./sw.js")
+            .catch((error) => console.warn("Offline cache unavailable", error)),
+        );
+    </script>
+  </body>
 </html>

@@ -1,0 +1,289 @@
+[
+  {
+    "bank": "acoustic",
+    "note": "D2",
+    "frames": 11,
+    "measuredHz": 73.298716,
+    "correctionCents": 2.772
+  },
+  {
+    "bank": "acoustic",
+    "note": "E2",
+    "frames": 11,
+    "measuredHz": 82.296956,
+    "correctionCents": 2.311
+  },
+  {
+    "bank": "acoustic",
+    "note": "G2",
+    "frames": 11,
+    "measuredHz": 97.800182,
+    "correctionCents": 3.513
+  },
+  {
+    "bank": "acoustic",
+    "note": "A2",
+    "frames": 11,
+    "measuredHz": 109.976254,
+    "correctionCents": 0.374
+  },
+  {
+    "bank": "acoustic",
+    "note": "B2",
+    "frames": 11,
+    "measuredHz": 123.338154,
+    "correctionCents": 1.861
+  },
+  {
+    "bank": "acoustic",
+    "note": "C3",
+    "frames": 11,
+    "measuredHz": 130.672712,
+    "correctionCents": 1.855
+  },
+  {
+    "bank": "acoustic",
+    "note": "D3",
+    "frames": 11,
+    "measuredHz": 146.752911,
+    "correctionCents": 0.937
+  },
+  {
+    "bank": "acoustic",
+    "note": "E3",
+    "frames": 11,
+    "measuredHz": 164.62691,
+    "correctionCents": 1.964
+  },
+  {
+    "bank": "acoustic",
+    "note": "G3",
+    "frames": 11,
+    "measuredHz": 195.705369,
+    "correctionCents": 2.584
+  },
+  {
+    "bank": "acoustic",
+    "note": "A3",
+    "frames": 9,
+    "measuredHz": 219.917168,
+    "correctionCents": 0.652
+  },
+  {
+    "bank": "acoustic",
+    "note": "B3",
+    "frames": 11,
+    "measuredHz": 246.794836,
+    "correctionCents": 1.03
+  },
+  {
+    "bank": "acoustic",
+    "note": "C4",
+    "frames": 11,
+    "measuredHz": 261.511522,
+    "correctionCents": 0.755
+  },
+  {
+    "bank": "acoustic",
+    "note": "D4",
+    "frames": 11,
+    "measuredHz": 293.492683,
+    "correctionCents": 1.015
+  },
+  {
+    "bank": "acoustic",
+    "note": "E4",
+    "frames": 11,
+    "measuredHz": 329.855167,
+    "correctionCents": -1.195
+  },
+  {
+    "bank": "nylon",
+    "note": "D2",
+    "frames": 11,
+    "measuredHz": 73.301755,
+    "correctionCents": 2.701
+  },
+  {
+    "bank": "nylon",
+    "note": "E2",
+    "frames": 11,
+    "measuredHz": 82.337998,
+    "correctionCents": 1.448
+  },
+  {
+    "bank": "nylon",
+    "note": "F#2",
+    "frames": 11,
+    "measuredHz": 92.493297,
+    "correctionCents": 0.099
+  },
+  {
+    "bank": "nylon",
+    "note": "G#2",
+    "frames": 11,
+    "measuredHz": 103.830141,
+    "correctionCents": -0.066
+  },
+  {
+    "bank": "nylon",
+    "note": "A2",
+    "frames": 11,
+    "measuredHz": 110.049487,
+    "correctionCents": -0.779
+  },
+  {
+    "bank": "nylon",
+    "note": "B2",
+    "frames": 11,
+    "measuredHz": 123.482916,
+    "correctionCents": -0.17
+  },
+  {
+    "bank": "nylon",
+    "note": "C#3",
+    "frames": 11,
+    "measuredHz": 138.635593,
+    "correctionCents": -0.553
+  },
+  {
+    "bank": "nylon",
+    "note": "D3",
+    "frames": 11,
+    "measuredHz": 146.669596,
+    "correctionCents": 1.92
+  },
+  {
+    "bank": "nylon",
+    "note": "E3",
+    "frames": 11,
+    "measuredHz": 164.917412,
+    "correctionCents": -1.088
+  },
+  {
+    "bank": "nylon",
+    "note": "F#3",
+    "frames": 11,
+    "measuredHz": 184.949849,
+    "correctionCents": 0.443
+  },
+  {
+    "bank": "nylon",
+    "note": "G3",
+    "frames": 11,
+    "measuredHz": 195.98444,
+    "correctionCents": 0.117
+  },
+  {
+    "bank": "nylon",
+    "note": "A3",
+    "frames": 11,
+    "measuredHz": 219.877223,
+    "correctionCents": 0.966
+  },
+  {
+    "bank": "nylon",
+    "note": "B3",
+    "frames": 11,
+    "measuredHz": 246.936581,
+    "correctionCents": 0.036
+  },
+  {
+    "bank": "nylon",
+    "note": "C#4",
+    "frames": 11,
+    "measuredHz": 276.994527,
+    "correctionCents": 1.175
+  },
+  {
+    "bank": "nylon",
+    "note": "D#4",
+    "frames": 11,
+    "measuredHz": 311.090677,
+    "correctionCents": 0.202
+  },
+  {
+    "bank": "nylon",
+    "note": "E4",
+    "frames": 11,
+    "measuredHz": 329.448602,
+    "correctionCents": 0.94
+  },
+  {
+    "bank": "electric",
+    "note": "C#2",
+    "frames": 11,
+    "measuredHz": 69.297823,
+    "correctionCents": -0.054
+  },
+  {
+    "bank": "electric",
+    "note": "E2",
+    "frames": 11,
+    "measuredHz": 82.38739,
+    "correctionCents": 0.41
+  },
+  {
+    "bank": "electric",
+    "note": "F#2",
+    "frames": 11,
+    "measuredHz": 92.503788,
+    "correctionCents": -0.097
+  },
+  {
+    "bank": "electric",
+    "note": "A2",
+    "frames": 11,
+    "measuredHz": 110.013385,
+    "correctionCents": -0.211
+  },
+  {
+    "bank": "electric",
+    "note": "C3",
+    "frames": 11,
+    "measuredHz": 130.822259,
+    "correctionCents": -0.125
+  },
+  {
+    "bank": "electric",
+    "note": "D#3",
+    "frames": 11,
+    "measuredHz": 155.576181,
+    "correctionCents": -0.141
+  },
+  {
+    "bank": "electric",
+    "note": "F#3",
+    "frames": 11,
+    "measuredHz": 184.882397,
+    "correctionCents": 1.075
+  },
+  {
+    "bank": "electric",
+    "note": "A3",
+    "frames": 11,
+    "measuredHz": 220.070157,
+    "correctionCents": -0.552
+  },
+  {
+    "bank": "electric",
+    "note": "C4",
+    "frames": 11,
+    "measuredHz": 261.254368,
+    "correctionCents": 2.458
+  },
+  {
+    "bank": "electric",
+    "note": "D#4",
+    "frames": 11,
+    "measuredHz": 311.063791,
+    "correctionCents": 0.352
+  },
+  {
+    "bank": "electric",
+    "note": "F#4",
+    "frames": 11,
+    "measuredHz": 369.920251,
+    "correctionCents": 0.347
+  }
+]

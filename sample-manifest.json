@@ -1,0 +1,220 @@
+{
+  "sourceCommit": "622c2f1c32c8cfce4158ddc3eb26e518ddef37e5",
+  "banks": {
+    "acoustic": [
+      {
+        "note": "D2",
+        "file": "samples/acoustic/D2.mp3",
+        "measuredHz": 73.298716
+      },
+      {
+        "note": "E2",
+        "file": "samples/acoustic/E2.mp3",
+        "measuredHz": 82.296956
+      },
+      {
+        "note": "G2",
+        "file": "samples/acoustic/G2.mp3",
+        "measuredHz": 97.800182
+      },
+      {
+        "note": "A2",
+        "file": "samples/acoustic/A2.mp3",
+        "measuredHz": 109.976254
+      },
+      {
+        "note": "B2",
+        "file": "samples/acoustic/B2.mp3",
+        "measuredHz": 123.338154
+      },
+      {
+        "note": "C3",
+        "file": "samples/acoustic/C3.mp3",
+        "measuredHz": 130.672712
+      },
+      {
+        "note": "D3",
+        "file": "samples/acoustic/D3.mp3",
+        "measuredHz": 146.752911
+      },
+      {
+        "note": "E3",
+        "file": "samples/acoustic/E3.mp3",
+        "measuredHz": 164.62691
+      },
+      {
+        "note": "G3",
+        "file": "samples/acoustic/G3.mp3",
+        "measuredHz": 195.705369
+      },
+      {
+        "note": "A3",
+        "file": "samples/acoustic/A3.mp3",
+        "measuredHz": 219.917168
+      },
+      {
+        "note": "B3",
+        "file": "samples/acoustic/B3.mp3",
+        "measuredHz": 246.794836
+      },
+      {
+        "note": "C4",
+        "file": "samples/acoustic/C4.mp3",
+        "measuredHz": 261.511522
+      },
+      {
+        "note": "D4",
+        "file": "samples/acoustic/D4.mp3",
+        "measuredHz": 293.492683
+      },
+      {
+        "note": "E4",
+        "file": "samples/acoustic/E4.mp3",
+        "measuredHz": 329.855167
+      }
+    ],
+    "nylon": [
+      {
+        "note": "D2",
+        "file": "samples/nylon/D2.mp3",
+        "measuredHz": 73.301755
+      },
+      {
+        "note": "E2",
+        "file": "samples/nylon/E2.mp3",
+        "measuredHz": 82.337998
+      },
+      {
+        "note": "F#2",
+        "file": "samples/nylon/Fs2.mp3",
+        "measuredHz": 92.493297
+      },
+      {
+        "note": "G#2",
+        "file": "samples/nylon/Gs2.mp3",
+        "measuredHz": 103.830141
+      },
+      {
+        "note": "A2",
+        "file": "samples/nylon/A2.mp3",
+        "measuredHz": 110.049487
+      },
+      {
+        "note": "B2",
+        "file": "samples/nylon/B2.mp3",
+        "measuredHz": 123.482916
+      },
+      {
+        "note": "C#3",
+        "file": "samples/nylon/Cs3.mp3",
+        "measuredHz": 138.635593
+      },
+      {
+        "note": "D3",
+        "file": "samples/nylon/D3.mp3",
+        "measuredHz": 146.669596
+      },
+      {
+        "note": "E3",
+        "file": "samples/nylon/E3.mp3",
+        "measuredHz": 164.917412
+      },
+      {
+        "note": "F#3",
+        "file": "samples/nylon/Fs3.mp3",
+        "measuredHz": 184.949849
+      },
+      {
+        "note": "G3",
+        "file": "samples/nylon/G3.mp3",
+        "measuredHz": 195.98444
+      },
+      {
+        "note": "A3",
+        "file": "samples/nylon/A3.mp3",
+        "measuredHz": 219.877223
+      },
+      {
+        "note": "B3",
+        "file": "samples/nylon/B3.mp3",
+        "measuredHz": 246.936581
+      },
+      {
+        "note": "C#4",
+        "file": "samples/nylon/Cs4.mp3",
+        "measuredHz": 276.994527
+      },
+      {
+        "note": "D#4",
+        "file": "samples/nylon/Ds4.mp3",
+        "measuredHz": 311.090677
+      },
+      {
+        "note": "E4",
+        "file": "samples/nylon/E4.mp3",
+        "measuredHz": 329.448602
+      }
+    ],
+    "electric": [
+      {
+        "note": "C#2",
+        "file": "samples/electric/Cs2.mp3",
+        "measuredHz": 69.297823
+      },
+      {
+        "note": "E2",
+        "file": "samples/electric/E2.mp3",
+        "measuredHz": 82.38739
+      },
+      {
+        "note": "F#2",
+        "file": "samples/electric/Fs2.mp3",
+        "measuredHz": 92.503788
+      },
+      {
+        "note": "A2",
+        "file": "samples/electric/A2.mp3",
+        "measuredHz": 110.013385
+      },
+      {
+        "note": "C3",
+        "file": "samples/electric/C3.mp3",
+        "measuredHz": 130.822259
+      },
+      {
+        "note": "D#3",
+        "file": "samples/electric/Ds3.mp3",
+        "measuredHz": 155.576181
+      },
+      {
+        "note": "F#3",
+        "file": "samples/electric/Fs3.mp3",
+        "measuredHz": 184.882397
+      },
+      {
+        "note": "A3",
+        "file": "samples/electric/A3.mp3",
+        "measuredHz": 220.070157
+      },
+      {
+        "note": "C4",
+        "file": "samples/electric/C4.mp3",
+        "measuredHz": 261.254368
+      },
+      {
+        "note": "D#4",
+        "file": "samples/electric/Ds4.mp3",
+        "measuredHz": 311.063791
+      },
+      {
+        "note": "F#4",
+        "file": "samples/electric/Fs4.mp3",
+        "measuredHz": 369.920251
+      }
+    ]
+  },
+  "calibration": {
+    "method": "Median McLeod estimate on 0.2–1.2 s mono decode at the recording sample rate; accepted frames within 70 cents of nominal. Corrected during playback using measuredHz.",
+    "detector": "pitchy 4.1.0"
+  }
+}

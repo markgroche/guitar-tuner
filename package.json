@@ -1,11 +1,14 @@
 {
   "name": "guitar-tuner",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
-  "scripts": {
-    "test:e2e": "playwright test"
+  "engines": {
+    "node": ">=20"
   },
-  "devDependencies": {
-    "@playwright/test": "1.59.1"
+  "scripts": {
+    "dev": "python3 -m http.server 4173 --bind 127.0.0.1",
+    "test": "node --test tests/tuner-*.test.mjs",
+    "build": "node scripts/build-site.mjs"
   }
 }

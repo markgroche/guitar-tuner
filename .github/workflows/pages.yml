@@ -1,10 +1,8 @@
-name: Deploy to GitHub Pages
+name: Test and deploy GitHub Pages
 
 on:
   push:
-    branches:
-      - master
-      - main
+    branches: [master]
   workflow_dispatch:
 
 permissions:
@@ -22,16 +20,19 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Upload artifact
+        uses: actions/checkout@v6
+      - name: Test audio, microphone lifecycle and offline assets
+        run: npm test
+      - name: Prepare static site
+        run: npm run build
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload site
         uses: actions/upload-pages-artifact@v4
         with:
-          path: .
-
-      - name: Deploy to GitHub Pages
+          path: _site
+      - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
