@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-skin="acoustic">
   <head>
     <meta charset="UTF-8" />
     <meta
@@ -9,13 +9,30 @@
     <meta name="theme-color" content="#101018" />
     <title>Guitar Tuner</title>
     <link rel="manifest" href="manifest.json" />
+    <script>
+      try {
+        const version = new URLSearchParams(location.search).get("v");
+        // The canonical Pages URL always opens v2. Explicit version links
+        // preserve access to v1 without changing the published default.
+        document.documentElement.dataset.skin =
+          version === "1" ? "classic" : "acoustic";
+      } catch {}
+    </script>
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="acoustic-studio.css?build=vinyl-4" />
   </head>
   <body>
     <main id="app">
       <header class="app-header">
-        <h1>Guitar tuner</h1>
-        <span>Play. Listen. Tune.</span>
+        <h1 id="version-title">Guitar tuner <span>v2</span></h1>
+        <button
+          id="skin-toggle"
+          class="skin-toggle"
+          type="button"
+          aria-label="Switch to Classic appearance"
+        >
+          Classic view
+        </button>
       </header>
       <button
         class="tuning-selector"
@@ -24,7 +41,7 @@
         aria-expanded="false"
         aria-controls="tuning-drawer"
       >
-        <span class="tuning-name" id="tuning-name">Standard</span
+        <span class="tuning-copy"><span class="tuning-name" id="tuning-name">Standard</span><span id="tuning-notes" class="tuning-notes">E · A · D · G · B · E</span></span
         ><span aria-hidden="true">⌄</span>
       </button>
       <div class="tuning-drawer" id="tuning-drawer" aria-hidden="true" inert>
@@ -56,6 +73,7 @@
           </p>
         </section>
       </div>
+      <section class="tuning-feedback" aria-label="Tuning feedback">
       <section class="note-display" aria-label="Current tuning reading">
         <div class="note-target" id="note-target">Standard · auto string</div>
         <div class="note-name" id="note-name">–</div>
@@ -104,14 +122,27 @@
           <span></span><span></span><span></span><span></span>
         </div>
       </div>
-      <div
-        class="string-buttons"
-        id="string-buttons"
-        role="group"
-        aria-label="Strings, lowest to highest"
-      ></div>
+      </section>
+      <section class="headstock-stage" aria-label="String selection">
+        <img
+          class="headstock-image"
+          src="assets/walnut-headstock-v1.webp"
+          width="1024"
+          height="1536"
+          alt="Walnut acoustic guitar headstock with three aged brass tuning pegs on each side"
+          decoding="async"
+          fetchpriority="high"
+        />
+        <div
+          class="string-buttons"
+          id="string-buttons"
+          role="group"
+          aria-label="Strings, lowest to highest"
+        ></div>
+      </section>
       <div class="target-controls">
-        <span>Tap a string to hear it. While listening, tap to lock it.</span
+        <span id="string-hint"
+          >Tap a string to hear it. While listening, tap to lock it.</span
         ><button id="unlock-btn" hidden>Auto detect</button>
       </div>
       <button class="mic-button" id="mic-button" aria-pressed="false">
@@ -128,6 +159,9 @@
           <path d="M2 10v2a8 8 0 0 0 16 0v-2M10 20v3M5 23h10" /></svg
         ><span id="mic-label">Start tuning</span>
       </button>
+      <details class="studio-settings" id="studio-settings" open>
+        <summary>Sound &amp; mic <span aria-hidden="true">＋</span></summary>
+        <div class="studio-settings-body">
       <div
         class="playback-controls"
         role="group"
@@ -173,7 +207,7 @@
           <p id="sensitivity-help">
             Higher picks up softer notes. Lower it in a noisy room.
           </p>
-          <label for="reference-pitch">Reference A4</label>
+          <label for="reference-pitch">Concert pitch</label>
           <div class="reference-pitch">
             <input
               id="reference-pitch"
@@ -189,13 +223,17 @@
           </p>
         </div>
       </details>
+        <a class="studio-credits" href="CREDITS.txt" target="_blank" rel="noopener">Sound &amp; image credits</a>
+        </div>
+      </details>
       <p class="error-msg" id="error-msg" role="alert" hidden></p>
       <footer>
         <span>20 tunings · six strings</span
         ><a href="CREDITS.txt" target="_blank" rel="noopener">Sound credits</a>
       </footer>
     </main>
-    <script type="module" src="tuner.js"></script>
+    <script type="module" src="skin.js?build=vinyl-4"></script>
+    <script type="module" src="tuner.js?build=vinyl-4"></script>
     <script>
       if ("serviceWorker" in navigator)
         window.addEventListener("load", () =>

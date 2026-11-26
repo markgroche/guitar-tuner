@@ -8,7 +8,7 @@ import {
 } from "./tuning-data.js";
 import { PitchTracker } from "./pitch-tracker.js";
 const $ = (id) => document.getElementById(id);
-const display = (n) => n.replace("#", "♯").replace("b", "♭");
+const display = (n) => n.replace(/-?\d+$/, "").replace("#", "♯").replace("b", "♭");
 const tracker = new PitchTracker();
 const state = {
   tuningIdx: 0,
@@ -126,6 +126,7 @@ function updateTarget() {
 }
 function renderStrings() {
   $("tuning-name").textContent = preset().name;
+  $("tuning-notes").textContent = preset().strings.map(display).join(" · ");
   $("string-buttons").replaceChildren();
   preset().strings.forEach((note, i) => {
     const b = document.createElement("button");

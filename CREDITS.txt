@@ -28,3 +28,22 @@ Calibration details: sample-manifest.json and sample-calibration.json.
 
 Gieson is an experience reference only. No Gieson code, visual artwork
 or recordings are included.
+
+Acoustic Studio artwork
+The user supplied Vintage Guitar Headstock in Warm Vinyl Nook.png as the
+visual reference. The isolated photorealistic walnut/brass headstock was
+produced with the built-in OpenAI image generation tool and optimized to
+WebP with lossless alpha. No competitor artwork is used. The exact prompt
+is retained in assets/walnut-headstock-v1.webp.json and the development
+asset directory.
+
+Acoustic Studio fonts
+Bricolage Grotesque (Studio Display) and DM Sans (Studio Body), reused from
+the existing portfolio font files. Both are distributed under the SIL
+Open Font License; full notices are included in assets/OFL-*.txt.
+
+Vinyl Room v2 background
+assets/vinyl-room-v2.webp is an unchanged copy of the portfolio's existing
+dist/assets/atlantic-bunker.webp listening room. Its source metadata is
+retained in assets/vinyl-room-v2.webp.json. It is used to keep the tuner
+within the portfolio's visual world. No GuitarTuna artwork is included.

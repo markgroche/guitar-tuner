@@ -1,12 +1,12 @@
 {
   "name": "Guitar Tuner",
   "short_name": "Tuner",
-  "description": "Guitar tuner with microphone detection, recorded guitar sounds and 20 tunings",
-  "start_url": "./",
+  "description": "Guitar tuner with a realistic walnut headstock, microphone detection, recorded guitar sounds and 20 tunings",
+  "start_url": "./?v=2",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#101018",
-  "theme_color": "#101018",
+  "background_color": "#160e09",
+  "theme_color": "#160e09",
   "orientation": "portrait",
   "icons": [
     {
